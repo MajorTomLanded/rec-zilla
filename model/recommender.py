@@ -1,10 +1,10 @@
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
-import data_client
+from model.data_client import DataClient
 
 class Recommender:
     def __init__(self):
-        self.data_client = data_client.DataClient()
+        self.data_client = DataClient()
         self.item_similarity_dataframe = self.create_item_similarity_dataframe()
     
     def create_item_similarity_dataframe(self):
