@@ -28,7 +28,7 @@
        
     ### Components 
 
-    - `model/data_client.py`: downloads, merges, and cleans data.
+    - `model/data_client.py`: downloads, merges, and validates data.
     - `model/recommender.py`: builds item to item similarity scores, core recommend functionality
     - `model/cold_start.py`:  build active user embeddings, seeds new user ratings data
     - `main.py`: CLI interface for recommender and cold start
@@ -65,7 +65,7 @@ CITATIONS:
 
 2. Sarwar, B., Karypis, G., Konstan, J., & Riedl, J. (2001). Item-based collaborative filtering recommendation algorithms. In Proceedings of the 10th International Conference on World Wide Web (WWW '01), 285–295. https://doi.org/10.1145/371920.372071
 
-3. Burke, R. (2002). Hybrid recommender systems: Survey and experiments. User Modeling and User-Adapted Interaction, 12(4), 331–370. https://doi.org/10.1023/A:1021240730564
+3. Burke, R. (2002). Hybrid recommender systems: Survey and experiments. User Modeling and User-Adapted Interaction, 12(4), 331–370. https://www.researchgate.net/publication/263377228_Hybrid_Recommender_Systems_Survey_and_Experiments
 
 4. Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence embeddings using Siamese BERT-networks. In Proceedings of EMNLP-IJCNLP 2019, 3982–3992. https://arxiv.org/abs/1908.10084
 
