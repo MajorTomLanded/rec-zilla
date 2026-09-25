@@ -23,12 +23,7 @@ class ColdStartRecommender:
     def warm_up(self, fetch_missing: bool = True) -> pd.DataFrame:
         """
         Load (or compute and cache) embeddings for all active users.
-        Call this once before find_similar_users/seed_new_user.
-        Safe to call more than once - already-cached users are skipped.
-
-        fetch_missing=False uses only whatever is already cached on disk
-        and skips calling the embeddings API for missing users - useful
-        when rate limited. The neighbor pool will just be smaller.
+        Already-cached users are skipped.
         """
         self.active_user_embeddings = self._load_active_user_embeddings(fetch_missing=fetch_missing)
         return self.active_user_embeddings
@@ -64,6 +59,12 @@ class ColdStartRecommender:
             return existing
 
         if not fetch_missing:
+            if existing.empty:
+                raise RuntimeError(
+                    "--cached-only was used but no embeddings are cached yet "
+                    f"(expected a cache at {active_user_embeddings_path}). "
+                    "Run 'python main.py warm-up' at least once first."
+                )
             print(f"Skipping fetch for {len(remaining)}/{len(all_ids)} missing users (cached-only mode). Using {len(existing)} cached embeddings.")
             return existing
 
@@ -90,9 +91,9 @@ class ColdStartRecommender:
                         if attempt == max_retries - 1:
                             raise RuntimeError(
                                 f"Still rate limited after {max_retries} retries. "
-                                f"{i}/{total} of this run's missing users are embedded and saved to disk - "
-                                "rerun later to pick up where you left off, or pass fetch_missing=False "
-                                "(--cached-only on the CLI) to proceed without the rest."
+                                f"{i}/{total} of this run's missing users are embedded and saved to disk. "
+                                "Re-run later to pick up where you left off, or pass fetch_missing=False "
+                                "(--cached-only on the CLI) to proceed without the missing IDs."
                             ) from e
                         print(f"Rate limited, waiting 60s... (attempt {attempt + 1}/{max_retries})")
                         time.sleep(60)
