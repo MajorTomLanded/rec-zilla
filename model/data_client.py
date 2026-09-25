@@ -12,7 +12,8 @@ class DataClient:
         self.movielens_links = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "links.csv")
         self.movielens_ratings = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "ratings.csv")
         self.ratings = pd.read_csv(self.DATA_DIR / "events.csv.gz")
-        self.ratings_combined_pivot = self.make_combined_ratings_matrix()
+        self.ratings_matrix = self.make_combined_ratings_matrix()
+        self.users = pd.read_csv(self.DATA_DIR / "users.csv.gz")
 
     def download_file(self, url: str, destination: Path):
             """
@@ -85,5 +86,5 @@ class DataClient:
             movielens_ratings_mapped[["user_id", "movie_id", "rating_norm"]],
         ])
         # pivot
-        ratings_combined_pivot = ratings_combined.pivot_table(index="user_id", columns="movie_id", values="rating_norm")
-        return ratings_combined_pivot
+        ratings_matrix = ratings_combined.pivot_table(index="user_id", columns="movie_id", values="rating_norm")
+        return ratings_matrix
