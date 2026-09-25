@@ -3,19 +3,50 @@ import zipfile
 from pathlib import Path
 import pandas as pd
 
+
+def _require_columns(df: pd.DataFrame, required: set[str], source: str) -> None:
+    """Raise if a dataframe loaded from `source` is missing expected columns."""
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"{source} is missing expected columns: {sorted(missing)}")
+
+
 class DataClient:
-    def __init__(self):
+    DATA_DIR: Path
+    movies: pd.DataFrame
+    movielens_links: pd.DataFrame
+    movielens_ratings: pd.DataFrame
+    ratings: pd.DataFrame
+    ratings_matrix: pd.DataFrame
+    users: pd.DataFrame
+
+    def __init__(self) -> None:
         self.DATA_DIR = Path("data")
         self.download_course_data()
         self.download_movielens_data()
-        self.movies = pd.read_csv(self.DATA_DIR / "movies.csv.gz")
-        self.movielens_links = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "links.csv")
-        self.movielens_ratings = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "ratings.csv")
-        self.ratings = pd.read_csv(self.DATA_DIR / "events.csv.gz")
-        self.ratings_matrix = self.make_combined_ratings_matrix()
-        self.users = pd.read_csv(self.DATA_DIR / "users.csv.gz")
 
-    def download_file(self, url: str, destination: Path):
+        self.movies = pd.read_csv(self.DATA_DIR / "movies.csv.gz")
+        _require_columns(self.movies, {"movie_id", "title", "genres", "tmdb_id"}, "movies.csv.gz")
+
+        self.movielens_links = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "links.csv")
+        _require_columns(self.movielens_links, {"movieId", "tmdbId"}, "ml-latest-small/links.csv")
+
+        self.movielens_ratings = pd.read_csv(self.DATA_DIR / "ml-latest-small" / "ratings.csv")
+        _require_columns(self.movielens_ratings, {"userId", "movieId", "rating"}, "ml-latest-small/ratings.csv")
+
+        self.ratings = pd.read_csv(self.DATA_DIR / "events.csv.gz")
+        _require_columns(self.ratings, {"user_id", "movie_id", "rating"}, "events.csv.gz")
+
+        self.users = pd.read_csv(self.DATA_DIR / "users.csv.gz")
+        _require_columns(
+            self.users,
+            {"user_id", "self_description_likes", "self_description_dislikes"},
+            "users.csv.gz",
+        )
+
+        self.ratings_matrix = self.make_combined_ratings_matrix()
+
+    def download_file(self, url: str, destination: Path) -> None:
             """
             Download a file from a URL and save it to a destination path.
             """
@@ -24,7 +55,7 @@ class DataClient:
                 urllib.request.urlretrieve(url, destination)
 
 
-    def download_course_data(self):
+    def download_course_data(self) -> None:
         """
         Download the course data from mlip-cmu-online.
         """
@@ -36,8 +67,8 @@ class DataClient:
         ]
         for filename in filenames:
             self.download_file(f"{url}/{filename}", self.DATA_DIR / filename)
-    
-    def download_movielens_data(self):
+
+    def download_movielens_data(self) -> None:
         """
         Download movielens data for additional interaction data
         """
@@ -50,7 +81,7 @@ class DataClient:
                 z.extractall(self.DATA_DIR)
 
 
-    def make_combined_ratings_matrix(self):
+    def make_combined_ratings_matrix(self) -> pd.DataFrame:
         """
         Make a combined ratings matrix from the course and movielens data.
         """

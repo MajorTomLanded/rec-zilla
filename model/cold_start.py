@@ -5,16 +5,22 @@ import pandas as pd
 import uuid
 from google.genai.errors import ClientError
 from sklearn.metrics.pairwise import cosine_similarity
+from model.data_client import DataClient
 
 class ColdStartRecommender:
-    def __init__(self, data_client):
+    llm_client: genai.Client
+    data_client: DataClient
+    active_users: pd.DataFrame
+    active_user_embeddings: pd.DataFrame | None
+
+    def __init__(self, data_client: DataClient) -> None:
         load_dotenv()
         self.llm_client = genai.Client()
         self.data_client = data_client
         self.active_users = self._build_active_users()
         self.active_user_embeddings = None
 
-    def warm_up(self, fetch_missing: bool = True):
+    def warm_up(self, fetch_missing: bool = True) -> pd.DataFrame:
         """
         Load (or compute and cache) embeddings for all active users.
         Call this once before find_similar_users/seed_new_user.
@@ -27,11 +33,11 @@ class ColdStartRecommender:
         self.active_user_embeddings = self._load_active_user_embeddings(fetch_missing=fetch_missing)
         return self.active_user_embeddings
 
-    def _ensure_warmed_up(self):
+    def _ensure_warmed_up(self) -> None:
         if self.active_user_embeddings is None:
             raise RuntimeError("ColdStartRecommender.warm_up() must be called before this method.")
 
-    def _build_active_users(self):
+    def _build_active_users(self) -> pd.DataFrame:
         active_user_ids = set[str](self.data_client.ratings["user_id"].unique())
         active_users = self.data_client.users[self.data_client.users["user_id"].isin(active_user_ids)].copy()
         active_users["description_text"] = (
@@ -40,7 +46,7 @@ class ColdStartRecommender:
         ).str.strip()
         return active_users[active_users["description_text"] != ""]
 
-    def _load_active_user_embeddings(self, fetch_missing: bool = True):
+    def _load_active_user_embeddings(self, fetch_missing: bool = True) -> pd.DataFrame:
         # if this ran already, you should have the vectors saved locally
         active_user_embeddings_path = self.data_client.DATA_DIR / "warm_embeddings.csv"
         all_ids = "course_" + self.active_users["user_id"].astype(str)
@@ -110,7 +116,7 @@ class ColdStartRecommender:
         )
         return response.embeddings[0].values
 
-    def find_similar_users(self, cold_user_text, k=5):
+    def find_similar_users(self, cold_user_text: str, k: int = 5) -> pd.Series:
         self._ensure_warmed_up()
         cold_embedding = self.embed_text(cold_user_text)
         similarity_table = cosine_similarity([cold_embedding], self.active_user_embeddings.values)[0]
